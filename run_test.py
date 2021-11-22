@@ -50,6 +50,9 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
             print(f'    delete {local_file}')
             # local_file.unlink()
 
+        rows_done = -1
+        bytes_done = 0
+
         for key in s3_keys:
             if f'{table}.txt' not in key.key:
                 continue
@@ -61,8 +64,6 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
             with open(file_name, 'w') as f:
-                rows_done = -1
-                bytes_done = 0
                 for row in key.get()['Body'].iter_lines(keepends=True):
                     bytes_done += len(row)
 
@@ -76,6 +77,9 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
                         break
 
                 print(f'      downloaded {rows_done} rows')
+
+            if rows_to_download and rows_done >= rows_to_download:
+                break
 
 
 def list_all_tables():
