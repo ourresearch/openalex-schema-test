@@ -3,8 +3,10 @@ import concurrent.futures
 import pathlib
 import re
 import subprocess
+import sys
 import time
 from functools import partial
+from io import StringIO
 from textwrap import indent
 
 import boto3
@@ -105,33 +107,35 @@ def list_all_tables():
 
 
 def test_table(table, db_url, print_psql, psql_echo):
+    string_stdout = StringIO()
+    sys.stdout = string_stdout
+
     table_name = table['name']
     sql_filename = table['filename']
     error = None
-    output = ''
-    output += f'  test {table_name}\n'
+    print(f'  test {table_name}')
 
     if pathlib.Path(sql_filename).is_file():
         try:
             test_output = run_sql(db_url, sql_filename, psql_echo)
 
             if print_psql:
-                output += indent(test_output, '    ') + '\n'
+                print(indent(test_output, '    '))
 
-            output += '    PASSED\n'
+            print('    PASSED')
         except subprocess.CalledProcessError as e:
-            output += f'    FAILED, exception running {sql_filename}\n'
+            print(f'    FAILED, exception running {sql_filename}')
             error = e.output
-            output += indent(error, '    ') + '\n'
+            print(indent(error, '    '))
     else:
         error = f'table definition {sql_filename} not found'
-        output += f'    FAILED, {error}\n'
+        print(f'    FAILED, {error}')
 
     return {
         'success': error is None,
         'error': error,
         'name': table_name,
-        'output': output
+        'output': string_stdout.getvalue()
     }
 
 
