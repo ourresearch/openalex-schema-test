@@ -24,35 +24,29 @@ def run_sql(db_url, filename, psql_echo=False, drop_after_test=False):
 
 
 def maybe_delete_local_files(table, delete):
-    output = ''
-
     local_files = list(pathlib.Path('input/').rglob(f'{table}.txt*'))
 
     if not delete:
         for local_file in local_files:
-            output += f'keeping local file {local_file}\n'
+            print(f'  keeping local file {local_file}')
 
         if local_files:
-            return output
+            return
 
     for local_file in local_files:
-        output += f'delete {local_file}\n'
+        print(f'  delete {local_file}')
         local_file.unlink()
-
-    return output
 
 
 def download_table_from_s3(bucket, prefix, table, rows_to_download, use_local_files):
-    output = ''
-
     if not prefix.endswith('/'):
         prefix = f'{prefix}/'
 
     s3_keys = boto3.resource('s3').Bucket(bucket).objects.filter(Prefix=prefix)
 
-    output += f'download {table} from s3://{bucket}/{prefix}\n'
+    print(f'download {table} from s3://{bucket}/{prefix}')
 
-    output += indent(maybe_delete_local_files(table, not use_local_files), '  ')
+    maybe_delete_local_files(table, not use_local_files)
 
     rows_done = -1
     bytes_done = 0
@@ -67,7 +61,7 @@ def download_table_from_s3(bucket, prefix, table, rows_to_download, use_local_fi
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         if rows_to_download:
-            output += f'    download s3://{bucket}/{key.key} to {file_name}\n'
+            print(f'    download s3://{bucket}/{key.key} to {file_name}')
 
             with open(file_name, 'w') as f:
                 for row in key.get()['Body'].iter_lines(keepends=True):
@@ -79,20 +73,18 @@ def download_table_from_s3(bucket, prefix, table, rows_to_download, use_local_fi
                     if rows_to_download and rows_done >= rows_to_download:
                         break
 
-                output += f'      downloaded {rows_done} rows\n'
+                print(f'      downloaded {rows_done} rows')
         else:
             cp_cmd = f'aws s3 cp s3://{bucket}/{key.key} {file_name} --no-progress'
             with subprocess.Popen(cp_cmd, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, shell=True) as p:
                 for line in p.stdout:
-                    output += f'    {line}\n'
+                    print(f'    {line}')
 
             if p.returncode != 0:
                 raise subprocess.CalledProcessError(p.returncode, p.args)
 
         if rows_to_download and rows_done >= rows_to_download:
             break
-
-    return output
 
 
 def list_all_tables():
@@ -105,6 +97,9 @@ def list_all_tables():
 
 
 def test_table(table, test_options):
+    string_stdout = StringIO()
+    sys.stdout = string_stdout
+
     table_name = table['name']
     sql_filename = table['filename']
 
@@ -119,40 +114,40 @@ def test_table(table, test_options):
     rows_to_download = test_options['rows_to_download']
 
     error = None
-    output = f'test {table_name}\n'
+    print(f'test {table_name}')
 
     try:
-        output += indent(download_table_from_s3(bucket, prefix, table_name, rows_to_download, use_local_files), '  ')
+        download_table_from_s3(bucket, prefix, table_name, rows_to_download, use_local_files)
     except Exception as e:
         error = f'FAILED, exception getting files from S3: {e}'
-        output += indent(error, '    ') + '\n'
+        print(indent(error, '    '))
 
     if not error:
         if pathlib.Path(sql_filename).is_file():
             try:
-                output += f'  run {sql_filename}\n'
+                print(f'  run {sql_filename}')
                 test_output = run_sql(db_url, sql_filename, psql_echo, drop_after_test)
 
                 if print_psql:
-                    output += indent(test_output, '    ') + '\n'
+                    print(indent(test_output, '    '))
 
-                output += '  PASSED\n'
+                print('  PASSED')
             except subprocess.CalledProcessError as e:
-                output += f'  FAILED, exception running {sql_filename}\n'
+                print(f'  FAILED, exception running {sql_filename}')
                 error = e.output
-                output += indent(error, '    ') + '\n'
+                print(indent(error, '    '))
         else:
             error = f'table definition {sql_filename} not found'
-            output += f'  FAILED, {error}\n'
+            print(f'  FAILED, {error}')
 
     if delete_local_files == 'always' or (delete_local_files == 'if_passed' and error is None):
-        output += indent(maybe_delete_local_files(table_name, True), '  ')
+        maybe_delete_local_files(table_name, True)
 
     return {
         'success': error is None,
         'error': error,
         'name': table_name,
-        'output': output
+        'output': string_stdout.getvalue()
     }
 
 
