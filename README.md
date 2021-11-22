@@ -1,6 +1,6 @@
 # OpenAlex schema test
 
-This script downloads OpenAlex data files from S3 and copy them to a postgres database.
+This script downloads OpenAlex data files from S3 and copies them to a postgres database.
 
 It copies the files to the local machine and copies them to the database using scripts in ./sql/tables.
 To be safe you'll want about 1TB available on the local machine and 2TB on the database if testing all tables.
