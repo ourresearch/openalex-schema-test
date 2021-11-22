@@ -1,8 +1,10 @@
 import argparse
+import concurrent.futures
 import pathlib
 import re
 import subprocess
 import time
+from functools import partial
 from textwrap import indent
 
 import boto3
@@ -71,7 +73,7 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
                     rows_done += 1
 
                     if rows_done % 1000 == 0:
-                        print(f'      downloaded {rows_done} rows, {format_size(bytes_done)}', end='\r')
+                        print(f'      downloaded {rows_done} rows, {format_size(bytes_done)}               ', end='\r')
 
                     if rows_to_download and rows_done >= rows_to_download:
                         break
@@ -91,7 +93,38 @@ def list_all_tables():
     return tables
 
 
-def test_load_tables(db_url, tables, print_psql, psql_echo):
+def test_table(table, db_url, print_psql, psql_echo):
+    table_name = table['name']
+    sql_filename = table['filename']
+    error = None
+    output = ''
+    output += f'  test {table_name}\n'
+
+    if pathlib.Path(sql_filename).is_file():
+        try:
+            test_output = run_sql(db_url, sql_filename, psql_echo)
+
+            if print_psql:
+                output += indent(test_output, '    ') + '\n'
+
+            output += '    PASSED\n'
+        except subprocess.CalledProcessError as e:
+            output += f'    FAILED, exception running {sql_filename}\n'
+            error = e.output
+            output += indent(error, '    ') + '\n'
+    else:
+        error = f'table definition {sql_filename} not found'
+        output += f'    FAILED, {error}\n'
+
+    return {
+        'success': error is None,
+        'error': error,
+        'name': table_name,
+        'output': output
+    }
+
+
+def test_load_tables(db_url, tables, print_psql, psql_echo, threads):
     passed_tables = []
     failed_tables = {}
 
@@ -102,26 +135,21 @@ def test_load_tables(db_url, tables, print_psql, psql_echo):
 
     print('test tables')
 
-    for table, sql_filename in tables.items():
-        print(f'  test {table}')
+    table_dicts = [{'name': name, 'filename': filename} for name, filename in tables.items()]
 
-        if pathlib.Path(sql_filename).is_file():
-            try:
-                test_output = run_sql(db_url, sql_filename, psql_echo)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as pool:
+        table_tests = pool.map(
+            partial(test_table, db_url=db_url, print_psql=print_psql, psql_echo=psql_echo),
+            table_dicts,
+            chunksize=1
+        )
 
-                if print_psql:
-                    print(indent(test_output, '    '))
-
-                print('    PASSED')
-                passed_tables.append(table)
-            except subprocess.CalledProcessError as e:
-                print(f'    FAILED, exception running {sql_filename}')
-                print(indent(e.output, '    '))
-                failed_tables[table] = e.output
-        else:
-            error = f'table definition {sql_filename} not found'
-            print(f'    FAILED, {error}')
-            failed_tables[table] = error
+        for table_test in table_tests:
+            print(table_test['output'].strip())
+            if table_test['success']:
+                passed_tables.append(table_test['name'])
+            else:
+                failed_tables[table_test['name']] = table_test['error']
 
     print('passed tables')
     print(indent('\n'.join(passed_tables) if passed_tables else '(None)', '  '))
@@ -206,14 +234,30 @@ def get_test_db_url(heroku_app, addon):
 
 
 def run(parsed_args):
-    db_addon = parsed_args.db_addon or create_db_addon(parsed_args.app, parsed_args.db_plan)
+    new_db = False
+
+    if parsed_args.db_addon:
+        db_addon = parsed_args.db_addon
+    elif parsed_args.db_plan:
+        db_addon = create_db_addon(parsed_args.app, parsed_args.db_plan)
+        new_db = True
+    else:
+        default_db_addon = 'postgresql-amorphous-83485'
+        print(f'no --db-addon or --db-plan specified, trying default database {default_db_addon} on {parsed_args.app}')
+        if default_db_url := get_test_db_url(parsed_args.app, default_db_addon):
+            print(f'  success')
+            db_addon = default_db_addon
+        else:
+            print(f'  failed, creating a new standard-7 database on {parsed_args.app}')
+            db_addon = create_db_addon(parsed_args.app, 'standard-7')
+            new_db = True
 
     try:
         if not db_addon:
             print('no database addon to use, so not running any tests')
             return
         else:
-            print(f'using heroku postgres addon {db_addon}')
+            print(f'using heroku postgres addon {db_addon} on {parsed_args.app}')
 
         all_tables = list_all_tables()
 
@@ -236,9 +280,9 @@ def run(parsed_args):
             print(f'not able to find URL for {db_addon}, so not running any tests')
             return
 
-        test_load_tables(db_url, run_tables, parsed_args.print_psql, parsed_args.psql_echo)
+        test_load_tables(db_url, run_tables, parsed_args.print_psql, parsed_args.psql_echo, parsed_args.threads)
     finally:
-        if not parsed_args.db_addon:
+        if new_db and db_addon:
             print('\n')
             print(f'The heroku postgres addon {db_addon} was created on {parsed_args.app} to run these tests.')
             print(f'Destroy it by running the command `heroku addons:destroy {db_addon} --app {parsed_args.app}`')
@@ -263,7 +307,9 @@ if __name__ == '__main__':
     test_database = ap.add_argument_group('test database')
     test_database.add_argument('--app', '-a', default='oadoi-staging', help='heroku app to attach the test database to')
     test_db_specs = test_database.add_mutually_exclusive_group()
-    test_db_specs.add_argument('--db-plan', '-p', default='standard-7', help='heroku postgres plan to use for test db')
-    test_db_specs.add_argument('--db-addon', '-d', help='name of heroku postgres addon containing test database')
+    test_db_specs.add_argument('--db-plan', '-p', help='heroku postgres plan to use for test db, e.g. postgresql-amorphous-83485')
+    test_db_specs.add_argument('--db-addon', '-d', help='name of heroku postgres addon containing test database, e.g. postgresql-amorphous-83485')
+
+    ap.add_argument('--threads', type=int, default=1, help='number of tables to test in parallel')
 
     run(ap.parse_args())
