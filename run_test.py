@@ -48,7 +48,7 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
 
         for local_file in local_files:
             print(f'    delete {local_file}')
-            # local_file.unlink()
+            local_file.unlink()
 
         rows_done = -1
         bytes_done = 0
