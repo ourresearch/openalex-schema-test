@@ -23,18 +23,13 @@ def run_sql(db_url, filename, psql_echo=False, drop_after_test=False):
     )
 
 
-def maybe_delete_local_files(table, delete):
-    local_files = list(pathlib.Path('input/').rglob(f'{table}.txt*'))
+def list_local_files(table):
+    return list(pathlib.Path('input/').rglob(f'{table}.txt*'))
 
-    if not delete:
-        for local_file in local_files:
-            print(f'  keeping local file {local_file}')
 
-        if local_files:
-            return
-
-    for local_file in local_files:
-        print(f'  delete {local_file}')
+def delete_local_files(table):
+    for local_file in list_local_files(table):
+        print(f'    delete {local_file}')
         local_file.unlink()
 
 
@@ -44,9 +39,14 @@ def download_table_from_s3(bucket, prefix, table, rows_to_download, use_local_fi
 
     s3_keys = boto3.resource('s3').Bucket(bucket).objects.filter(Prefix=prefix)
 
-    print(f'download {table} from s3://{bucket}/{prefix}')
+    print(f'  download {table} from s3://{bucket}/{prefix}')
 
-    maybe_delete_local_files(table, not use_local_files)
+    if use_local_files and (local_files := list_local_files(table)):
+        for local_file in local_files:
+            print(f'    keeping local file {local_file}')
+        return
+
+    delete_local_files(table)
 
     rows_done = -1
     bytes_done = 0
@@ -78,7 +78,7 @@ def download_table_from_s3(bucket, prefix, table, rows_to_download, use_local_fi
             cp_cmd = f'aws s3 cp s3://{bucket}/{key.key} {file_name} --no-progress'
             with subprocess.Popen(cp_cmd, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, shell=True) as p:
                 for line in p.stdout:
-                    print(f'    {line}')
+                    print(f'      {line}')
 
             if p.returncode != 0:
                 raise subprocess.CalledProcessError(p.returncode, p.args)
@@ -107,7 +107,7 @@ def test_table(table, test_options):
     psql_echo = test_options['psql_echo']
     drop_after_test = test_options['drop_after_test']
     use_local_files = test_options['use_local_files']
-    delete_local_files = test_options['delete_files']
+    delete_files = test_options['delete_files']
     db_url = test_options['db_url']
     bucket = test_options['bucket']
     prefix = test_options['prefix']
@@ -140,8 +140,8 @@ def test_table(table, test_options):
             error = f'table definition {sql_filename} not found'
             print(f'  FAILED, {error}')
 
-    if delete_local_files == 'always' or (delete_local_files == 'if_passed' and error is None):
-        maybe_delete_local_files(table_name, True)
+    if delete_files == 'always' or (delete_files == 'if_passed' and error is None):
+        delete_local_files(table_name)
 
     return {
         'success': error is None,
