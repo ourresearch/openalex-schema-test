@@ -53,26 +53,26 @@ Test the first N rows of each file with `--rows N/ -r N`:
 
 ```text
 
-$ AWS_PROFILE=ourresearch python run_test.py -t Papers -t Authors --db-addon postgresql-adjacent-89066 -r 10000
-using heroku postgres addon postgresql-adjacent-89066
+$ AWS_PROFILE=ourresearch python run_test.py -t Papers -t Authors --db-addon postgresql-amorphous-83485 -r 10000
+using heroku postgres addon postgresql-amorphous-83485 on oadoi-staging
 download files from s3://openalex/data_dump_v1/2021-10-11/
   download Papers
     delete input/mag/Papers.txt
     download s3://openalex/data_dump_v1/2021-10-11/mag/Papers.txt to input/mag/Papers.txt
-      downloaded 10000 rows, 3.4Mk
+      downloaded 10000 rows, 3.4M
   download Authors
     delete input/mag/Authors.txt
     download s3://openalex/data_dump_v1/2021-10-11/mag/Authors.txt to input/mag/Authors.txt
       downloaded 10000 rows, 775.4k
-waiting for database: heroku pg:wait postgresql-adjacent-89066 --app oadoi-staging
+waiting for database: heroku pg:wait postgresql-amorphous-83485 --app oadoi-staging
   database ready
-get attachment name for postgresql-adjacent-89066 on oadoi-staging
-  attachment name is HEROKU_POSTGRESQL_PURPLE_URL
+get attachment name for postgresql-amorphous-83485 on oadoi-staging
+  attachment name is HEROKU_POSTGRESQL_NAVY_URL
 initialize database
 test tables
-  test Papers
+test Papers
     PASSED
-  test Authors
+test Authors
     PASSED
 passed tables
   Papers
@@ -80,10 +80,5 @@ passed tables
 failed tables
   (None)
 
-
 ```
-
-
-
-
 
