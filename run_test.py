@@ -353,6 +353,6 @@ if __name__ == '__main__':
     cleanup.add_argument('--drop-tables', default='if_passed', choices=drop_tables_choices(), help='condition in which to drop test db tables')
     cleanup.add_argument('--delete-files', default='if_passed', choices=delete_files_choices(), help='condition in which to delete local data')
 
-    ap.add_argument('--threads', type=int, default=1, help='number of tables to test in parallel')
+    ap.add_argument('--threads', type=int, default=4, help='number of tables to test in parallel')
 
     run(ap.parse_args())

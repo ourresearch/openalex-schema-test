@@ -1,13 +1,25 @@
 # OpenAlex schema test
 
 This script downloads OpenAlex data files from S3 and copies them to a postgres database.
-
-It copies the files to the local machine and copies them to the database using scripts in ./sql/tables.
-To be safe you'll want about 1TB available on the local machine and 2TB on the database if testing all tables.
+It copies the files to the local machine and loads them to the database using scripts in ./sql/tables.
 
 ## Setup
 
 This script requires python >= 3.8 and boto3 >= 1.18.
+
+### Space requirements
+
+The disk space required depends on the number of tables tested at once, and on whether the files are deleted
+and tables dropped as tests are completed.
+
+If loading one table at a time, deleting all data files, and dropping test tables
+(`--threads 1 --delete-files always --drop-tables if_passed`) you will need about 200 GB free on the local machine
+and 400 GB in the database.
+
+If you never delete anything (`--delete-files never --drop-tables never`) you will need 1 TB local and 2 TB on the database.
+
+With the default settings (`--threads 4 --delete-files if_passed --drop-tables if_passed`)
+you will need 400 GB local and 800 GB on the database if testing all tables.
 
 ### Heroku
 
