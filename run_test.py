@@ -12,10 +12,11 @@ from textwrap import indent
 import boto3
 
 
-def run_sql(db_url, filename, psql_echo=False):
+def run_sql(db_url, filename, psql_echo=False, drop_after_test=False):
     echo_arg = '-v ECHO=queries' if psql_echo else ''
+    drop_table_arg = f'-v DROP_TABLE_AFTER_TEST={1 if drop_after_test else 0}'
     return subprocess.check_output(
-        f'psql -v ON_ERROR_STOP=ON {echo_arg} {db_url} < {filename}',
+        f'psql -v ON_ERROR_STOP=ON {echo_arg} {drop_table_arg} {db_url} < {filename}',
         shell=True,
         universal_newlines=True,
         stderr=subprocess.STDOUT
@@ -106,7 +107,7 @@ def list_all_tables():
     return tables
 
 
-def test_table(table, db_url, print_psql, psql_echo):
+def test_table(table, db_url, print_psql, psql_echo, drop_after_test=False):
     string_stdout = StringIO()
     sys.stdout = string_stdout
 
@@ -117,7 +118,7 @@ def test_table(table, db_url, print_psql, psql_echo):
 
     if pathlib.Path(sql_filename).is_file():
         try:
-            test_output = run_sql(db_url, sql_filename, psql_echo)
+            test_output = run_sql(db_url, sql_filename, psql_echo, drop_after_test)
 
             if print_psql:
                 print(indent(test_output, '    '))
@@ -139,7 +140,7 @@ def test_table(table, db_url, print_psql, psql_echo):
     }
 
 
-def test_load_tables(db_url, tables, print_psql, psql_echo, threads):
+def test_load_tables(db_url, tables, print_psql, psql_echo, threads, drop_after_test):
     passed_tables = []
     failed_tables = {}
 
@@ -154,7 +155,7 @@ def test_load_tables(db_url, tables, print_psql, psql_echo, threads):
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as pool:
         table_tests = pool.map(
-            partial(test_table, db_url=db_url, print_psql=print_psql, psql_echo=psql_echo),
+            partial(test_table, db_url=db_url, print_psql=print_psql, psql_echo=psql_echo, drop_after_test=drop_after_test),
             table_dicts,
             chunksize=1
         )
@@ -295,7 +296,10 @@ def run(parsed_args):
             print(f'not able to find URL for {db_addon}, so not running any tests')
             return
 
-        test_load_tables(db_url, run_tables, parsed_args.print_psql, parsed_args.psql_echo, parsed_args.threads)
+        test_load_tables(
+            db_url, run_tables, parsed_args.print_psql,
+            parsed_args.psql_echo, parsed_args.threads, parsed_args.drop_tables == 'if_passed'
+        )
     finally:
         if new_db and db_addon:
             print('\n')
@@ -303,6 +307,14 @@ def run(parsed_args):
             print(f'Destroy it by running the command `heroku addons:destroy {db_addon} --app {parsed_args.app}`')
             print(f'or reuse it by running this script with the option `--db-addon=={db_addon}')
             input()
+
+
+def drop_tables_choices():
+    return ['never', 'if_passed']
+
+
+def delete_files_choices():
+    return ['never', 'if_passed', 'always']
 
 
 if __name__ == '__main__':
@@ -324,6 +336,10 @@ if __name__ == '__main__':
     test_db_specs = test_database.add_mutually_exclusive_group()
     test_db_specs.add_argument('--db-plan', '-p', help='heroku postgres plan to use for test db, e.g. standard-7')
     test_db_specs.add_argument('--db-addon', '-d', help='name of heroku postgres addon containing test database, e.g. postgresql-amorphous-83485')
+
+    cleanup = ap.add_argument_group('cleanup')
+    cleanup.add_argument('--drop-tables', default='if_passed', choices=drop_tables_choices(), help='condition in which to drop test db tables')
+    cleanup.add_argument('--delete-files', default='if_passed', choices=delete_files_choices(), help='condition in which to delete local data')
 
     ap.add_argument('--threads', type=int, default=1, help='number of tables to test in parallel')
 

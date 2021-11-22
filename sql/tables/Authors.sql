@@ -22,3 +22,7 @@ CREATE UNLOGGED TABLE mag.Authors(
 --CREATE INDEX idx_Authors_LastKnownAffiliationId ON mag.Authors(LastKnownAffiliationId);
 -- CREATE INDEX gidx_Authors_NormalizedName ON mag.Authors USING GIN(NormalizedName gin_trgm_ops);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.Authors;
+\endif

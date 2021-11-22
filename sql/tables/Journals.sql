@@ -25,3 +25,7 @@ CREATE UNLOGGED TABLE mag.Journals(
 --CREATE INDEX idx_Journals_NormalizedName ON mag.Journals(NormalizedName);
 --CREATE INDEX idx_Journals_Issn ON mag.Journals(Issn);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.Journals;
+\endif

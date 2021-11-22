@@ -12,3 +12,7 @@ CREATE UNLOGGED TABLE mag.FieldOfStudyExtendedAttributes(
 
 --CREATE INDEX idx_FieldOfStudyExtendedAttributes_FieldOfStudyId ON mag.FieldOfStudyExtendedAttributes(FieldOfStudyId);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.FieldOfStudyExtendedAttributes;
+\endif
