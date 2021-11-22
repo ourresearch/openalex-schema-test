@@ -41,12 +41,14 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
     for table in tables:
         print(f'  download {table}')
 
-        local_files = pathlib.Path('input/').rglob(f'{table}.txt*')
+        local_files = list(pathlib.Path('input/').rglob(f'{table}.txt*'))
 
         if use_local_files:
             for local_file in local_files:
                 print(f'    keeping local file {local_file}')
-            continue
+
+            if local_files:
+                continue
 
         for local_file in local_files:
             print(f'    delete {local_file}')
