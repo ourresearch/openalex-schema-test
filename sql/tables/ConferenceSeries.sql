@@ -17,3 +17,7 @@ CREATE UNLOGGED TABLE mag.ConferenceSeries(
 
 --CREATE INDEX idx_ConferenceSeries_NormalizedName ON mag.ConferenceSeries(NormalizedName);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.ConferenceSeries;
+\endif

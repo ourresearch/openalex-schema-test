@@ -17,3 +17,7 @@ CREATE UNLOGGED TABLE mag.PaperAuthorAffiliations(
 --CREATE INDEX idx_PaperAuthorAffiliations_AuthorId ON mag.PaperAuthorAffiliations(AuthorId);
 --CREATE INDEX idx_PaperAuthorAffiliations_AffiliationId ON mag.PaperAuthorAffiliations(AffiliationId);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.PaperAuthorAffiliations;
+\endif

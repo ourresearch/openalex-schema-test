@@ -12,3 +12,7 @@ CREATE UNLOGGED TABLE mag.PaperExtendedAttributes(
 
 --CREATE INDEX idx_PaperExtendedAttributes_PaperId ON mag.PaperExtendedAttributes(PaperId);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.PaperExtendedAttributes;
+\endif

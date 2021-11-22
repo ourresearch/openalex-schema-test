@@ -16,3 +16,7 @@ CREATE UNLOGGED TABLE mag.EntityRelatedEntities(
 --CREATE INDEX idx_EntityRelatedEntities_EntityId ON mag.EntityRelatedEntities(EntityId);
 --CREATE INDEX idx_EntityRelatedEntities_RelatedEntityId ON mag.EntityRelatedEntities(RelatedEntityId);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.EntityRelatedEntities;
+\endif

@@ -39,9 +39,9 @@ CREATE UNLOGGED TABLE mag.Papers(
     UpdatedDate timestamp without time zone
   );
 
-\! tr -d '\000' < input/mag/Papers.txt > input/mag/Papers_.txt
+\! tr -d '\000' < input/mag/Papers.txt > input/mag/Papers.txt.no_nulls
 
-\COPY mag.Papers(PaperId, Rank, Doi, DocType, Genre, IsParatext, PaperTitle, OriginalTitle, BookTitle, Year, Date, OnlineDate, Publisher, JournalId, ConferenceSeriesId, ConferenceInstanceId, Volume, Issue, FirstPage, LastPage, ReferenceCount, CitationCount, EstimatedCitation, OriginalVenue, FamilyId, FamilyRank, DocSubTypes, OaStatus, BestUrl, BestFreeUrl, BestFreeVersion, DoiLower, CreatedDate, UpdatedDate) FROM PROGRAM 'tail -n+2 input/mag/Papers_.txt' NULL as '';
+\COPY mag.Papers(PaperId, Rank, Doi, DocType, Genre, IsParatext, PaperTitle, OriginalTitle, BookTitle, Year, Date, OnlineDate, Publisher, JournalId, ConferenceSeriesId, ConferenceInstanceId, Volume, Issue, FirstPage, LastPage, ReferenceCount, CitationCount, EstimatedCitation, OriginalVenue, FamilyId, FamilyRank, DocSubTypes, OaStatus, BestUrl, BestFreeUrl, BestFreeVersion, DoiLower, CreatedDate, UpdatedDate) FROM PROGRAM 'tail -n+2 input/mag/Papers.txt.no_nulls' NULL as '';
 
 --CREATE INDEX idx_Papers_PaperTitle ON mag.Papers(PaperTitle);
 --CREATE INDEX idx_Papers_OriginalTitle ON mag.Papers(OriginalTitle);
@@ -52,4 +52,7 @@ CREATE UNLOGGED TABLE mag.Papers(
 --CREATE INDEX gidx_Papers_PaperTitle ON  mag.Papers USING GIN(PaperTitle gin_trgm_ops);
 --CREATE INDEX gidx_Papers_BookTitle ON  mag.Papers USING GIN(BookTitle gin_trgm_ops);
 
-
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.Papers;
+\endif

@@ -12,89 +12,79 @@ from textwrap import indent
 import boto3
 
 
-def run_sql(db_url, filename, psql_echo=False):
+def run_sql(db_url, filename, psql_echo=False, drop_after_test=False):
     echo_arg = '-v ECHO=queries' if psql_echo else ''
+    drop_table_arg = f'-v DROP_TABLE_AFTER_TEST={1 if drop_after_test else 0}'
     return subprocess.check_output(
-        f'psql -v ON_ERROR_STOP=ON {echo_arg} {db_url} < {filename}',
+        f'psql -v ON_ERROR_STOP=ON {echo_arg} {drop_table_arg} {db_url} < {filename}',
         shell=True,
         universal_newlines=True,
         stderr=subprocess.STDOUT
     )
 
 
-def format_size(num_bytes):
-    prefix = 0
-
-    while num_bytes > 1000:
-        num_bytes = num_bytes / 1000
-        prefix += 1
-
-    return f'{round(num_bytes, 1)}{"bkMGTPEZY"[prefix]}'
+def list_local_files(table):
+    return list(pathlib.Path('input/').rglob(f'{table}.txt*'))
 
 
-def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_files):
+def delete_local_files(table):
+    for local_file in list_local_files(table):
+        print(f'    delete {local_file}')
+        local_file.unlink()
+
+
+def download_table_from_s3(bucket, prefix, table, rows_to_download, use_local_files):
     if not prefix.endswith('/'):
         prefix = f'{prefix}/'
 
-    print(f'download files from s3://{bucket}/{prefix}')
-
     s3_keys = boto3.resource('s3').Bucket(bucket).objects.filter(Prefix=prefix)
 
-    for table in tables:
-        print(f'  download {table}')
+    print(f'  download {table} from s3://{bucket}/{prefix}')
 
-        local_files = list(pathlib.Path('input/').rglob(f'{table}.txt*'))
-
-        if use_local_files:
-            for local_file in local_files:
-                print(f'    keeping local file {local_file}')
-
-            if local_files:
-                continue
-
+    if use_local_files and (local_files := list_local_files(table)):
         for local_file in local_files:
-            print(f'    delete {local_file}')
-            local_file.unlink()
+            print(f'    keeping local file {local_file}')
+        return
 
-        rows_done = -1
-        bytes_done = 0
+    delete_local_files(table)
 
-        for key in s3_keys:
-            if f'/{table}.txt' not in key.key:
-                continue
+    rows_done = -1
+    bytes_done = 0
 
-            file_name = key.key.replace(prefix, 'input/')
-            file_path = pathlib.Path(file_name)
+    for key in s3_keys:
+        if f'/{table}.txt' not in key.key:
+            continue
 
+        file_name = key.key.replace(prefix, 'input/')
+        file_path = pathlib.Path(file_name)
+
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if rows_to_download:
             print(f'    download s3://{bucket}/{key.key} to {file_name}')
-            file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            if rows_to_download:
-                with open(file_name, 'w') as f:
-                    for row in key.get()['Body'].iter_lines(keepends=True):
-                        bytes_done += len(row)
+            with open(file_name, 'w') as f:
+                for row in key.get()['Body'].iter_lines(keepends=True):
+                    bytes_done += len(row)
 
-                        f.write(row.decode())
-                        rows_done += 1
+                    f.write(row.decode())
+                    rows_done += 1
 
-                        if rows_done % 1000 == 0:
-                            print(f'      downloaded {rows_done} rows, {format_size(bytes_done)}            ', end='\r')
+                    if rows_to_download and rows_done >= rows_to_download:
+                        break
 
-                        if rows_to_download and rows_done >= rows_to_download:
-                            break
+                print(f'      downloaded {rows_done} rows')
+        else:
+            cp_cmd = f'aws s3 cp s3://{bucket}/{key.key} {file_name} --no-progress'
+            with subprocess.Popen(cp_cmd, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, shell=True) as p:
+                for line in p.stdout:
+                    print(f'      {line}')
 
-                    print(f'      downloaded {rows_done} rows')
-            else:
-                cp_cmd = f'aws s3 cp s3://{bucket}/{key.key} {file_name}'
-                with subprocess.Popen(cp_cmd, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, shell=True) as p:
-                    for line in p.stdout:
-                        print(f'      {line.strip()}              ', end='\r')
+            if p.returncode != 0:
+                raise subprocess.CalledProcessError(p.returncode, p.args)
 
-                if p.returncode != 0:
-                    raise subprocess.CalledProcessError(p.returncode, p.args)
-
-            if rows_to_download and rows_done >= rows_to_download:
-                break
+        if rows_to_download and rows_done >= rows_to_download:
+            break
 
 
 def list_all_tables():
@@ -106,30 +96,52 @@ def list_all_tables():
     return tables
 
 
-def test_table(table, db_url, print_psql, psql_echo):
+def test_table(table, test_options):
     string_stdout = StringIO()
     sys.stdout = string_stdout
 
     table_name = table['name']
     sql_filename = table['filename']
+
+    print_psql = test_options['print_psql']
+    psql_echo = test_options['psql_echo']
+    drop_after_test = test_options['drop_after_test']
+    use_local_files = test_options['use_local_files']
+    delete_files = test_options['delete_files']
+    db_url = test_options['db_url']
+    bucket = test_options['bucket']
+    prefix = test_options['prefix']
+    rows_to_download = test_options['rows_to_download']
+
     error = None
-    print(f'  test {table_name}')
+    print(f'test {table_name}')
 
-    if pathlib.Path(sql_filename).is_file():
-        try:
-            test_output = run_sql(db_url, sql_filename, psql_echo)
+    try:
+        download_table_from_s3(bucket, prefix, table_name, rows_to_download, use_local_files)
+    except Exception as e:
+        error = f'FAILED, exception getting files from S3: {e}'
+        print(indent(error, '    '))
 
-            if print_psql:
-                print(indent(test_output, '    '))
+    if not error:
+        if pathlib.Path(sql_filename).is_file():
+            try:
+                print(f'  run {sql_filename}')
+                test_output = run_sql(db_url, sql_filename, psql_echo, drop_after_test)
 
-            print('    PASSED')
-        except subprocess.CalledProcessError as e:
-            print(f'    FAILED, exception running {sql_filename}')
-            error = e.output
-            print(indent(error, '    '))
-    else:
-        error = f'table definition {sql_filename} not found'
-        print(f'    FAILED, {error}')
+                if print_psql:
+                    print(indent(test_output, '    '))
+
+                print('  PASSED')
+            except subprocess.CalledProcessError as e:
+                print(f'  FAILED, exception running {sql_filename}')
+                error = e.output
+                print(indent(error, '    '))
+        else:
+            error = f'table definition {sql_filename} not found'
+            print(f'  FAILED, {error}')
+
+    if delete_files == 'always' or (delete_files == 'if_passed' and error is None):
+        delete_local_files(table_name)
 
     return {
         'success': error is None,
@@ -139,28 +151,40 @@ def test_table(table, db_url, print_psql, psql_echo):
     }
 
 
-def test_load_tables(db_url, tables, print_psql, psql_echo, threads):
+def test_load_tables(db_url, tables, parsed_args):
     passed_tables = []
     failed_tables = {}
 
     print('initialize database')
-    init_output = run_sql(db_url, 'sql/init.sql', psql_echo)
-    if print_psql:
+    init_output = run_sql(db_url, 'sql/init.sql', parsed_args.psql_echo)
+    if parsed_args.print_psql:
         print(indent(init_output, '    '))
 
     print('test tables')
 
+    test_options = {
+        'print_psql': parsed_args.print_psql,
+        'psql_echo': parsed_args.psql_echo,
+        'drop_after_test': parsed_args.drop_tables == 'if_passed',
+        'use_local_files': parsed_args.use_local_files,
+        'db_url': db_url,
+        'bucket': parsed_args.bucket,
+        'prefix': parsed_args.prefix,
+        'rows_to_download': parsed_args.rows,
+        'delete_files': parsed_args.delete_files,
+    }
+
     table_dicts = [{'name': name, 'filename': filename} for name, filename in tables.items()]
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as pool:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=parsed_args.threads) as pool:
         table_tests = pool.map(
-            partial(test_table, db_url=db_url, print_psql=print_psql, psql_echo=psql_echo),
+            partial(test_table, test_options=test_options),
             table_dicts,
             chunksize=1
         )
 
         for table_test in table_tests:
-            print(table_test['output'].strip())
+            print(indent(table_test['output'].strip(), '  '))
             if table_test['success']:
                 passed_tables.append(table_test['name'])
             else:
@@ -259,7 +283,7 @@ def run(parsed_args):
     else:
         default_db_addon = 'postgresql-amorphous-83485'
         print(f'no --db-addon or --db-plan specified, trying default database {default_db_addon} on {parsed_args.app}')
-        if default_db_url := get_test_db_url(parsed_args.app, default_db_addon):
+        if get_test_db_url(parsed_args.app, default_db_addon):
             print(f'  success')
             db_addon = default_db_addon
         else:
@@ -281,21 +305,13 @@ def run(parsed_args):
         else:
             run_tables = all_tables
 
-        download_tables_from_s3(
-            parsed_args.bucket,
-            parsed_args.prefix,
-            run_tables.keys(),
-            parsed_args.rows,
-            parsed_args.use_local_files
-        )
-
         db_url = get_test_db_url(parsed_args.app, db_addon)
 
         if not db_url:
             print(f'not able to find URL for {db_addon}, so not running any tests')
             return
 
-        test_load_tables(db_url, run_tables, parsed_args.print_psql, parsed_args.psql_echo, parsed_args.threads)
+        test_load_tables(db_url, run_tables, parsed_args)
     finally:
         if new_db and db_addon:
             print('\n')
@@ -303,6 +319,14 @@ def run(parsed_args):
             print(f'Destroy it by running the command `heroku addons:destroy {db_addon} --app {parsed_args.app}`')
             print(f'or reuse it by running this script with the option `--db-addon=={db_addon}')
             input()
+
+
+def drop_tables_choices():
+    return ['never', 'if_passed']
+
+
+def delete_files_choices():
+    return ['never', 'if_passed', 'always']
 
 
 if __name__ == '__main__':
@@ -324,6 +348,10 @@ if __name__ == '__main__':
     test_db_specs = test_database.add_mutually_exclusive_group()
     test_db_specs.add_argument('--db-plan', '-p', help='heroku postgres plan to use for test db, e.g. standard-7')
     test_db_specs.add_argument('--db-addon', '-d', help='name of heroku postgres addon containing test database, e.g. postgresql-amorphous-83485')
+
+    cleanup = ap.add_argument_group('cleanup')
+    cleanup.add_argument('--drop-tables', default='if_passed', choices=drop_tables_choices(), help='condition in which to drop test db tables')
+    cleanup.add_argument('--delete-files', default='if_passed', choices=delete_files_choices(), help='condition in which to delete local data')
 
     ap.add_argument('--threads', type=int, default=1, help='number of tables to test in parallel')
 

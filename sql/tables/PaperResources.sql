@@ -14,3 +14,8 @@ CREATE UNLOGGED TABLE mag.PaperResources(
 
 
 --CREATE INDEX idx_PaperResources_PaperId ON mag.PaperResources(PaperId);
+
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.PaperResources;
+\endif

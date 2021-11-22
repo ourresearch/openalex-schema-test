@@ -16,3 +16,8 @@ CREATE UNLOGGED TABLE mag.PaperMeSH(
 --CREATE INDEX idx_PaperMeSH_PaperId ON mag.PaperMeSH(PaperId);
 --CREATE INDEX idx_PaperMeSH_DescriptorUI ON mag.PaperMeSH(DescriptorUI);
 --CREATE INDEX idx_PaperMeSH_QualifierUI ON mag.PaperMeSH(QualifierUI);
+
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.PaperMeSH;
+\endif

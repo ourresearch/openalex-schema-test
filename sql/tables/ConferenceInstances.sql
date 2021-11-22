@@ -34,3 +34,7 @@ UPDATE mag.ConferenceInstances
 SET geom = ST_SetSRID(ST_MakePoint(longitude, latitude),4326);
 --CREATE INDEX idx_ConferenceInstances_geom ON mag.ConferenceInstances USING gist(geom);
 
+SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
+\if :should_drop
+    DROP TABLE mag.ConferenceInstances;
+\endif
