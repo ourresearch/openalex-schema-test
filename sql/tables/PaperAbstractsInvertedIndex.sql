@@ -8,5 +8,5 @@ CREATE UNLOGGED TABLE mag.PaperAbstractsInvertedIndex(
     IndexedAbstract JSONB
   );
 
-\COPY mag.PaperAbstractsInvertedIndex(PaperId, IndexedAbstract) FROM PROGRAM 'awk FNR-1 input/nlp/PaperAbstractsInvertedIndex.txt*' null as ''i;
+\COPY mag.PaperAbstractsInvertedIndex(PaperId, IndexedAbstract) FROM PROGRAM 'awk FNR-1 input/nlp/PaperAbstractsInvertedIndex.txt*' null as '';
 
