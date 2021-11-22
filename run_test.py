@@ -307,7 +307,7 @@ if __name__ == '__main__':
     test_database = ap.add_argument_group('test database')
     test_database.add_argument('--app', '-a', default='oadoi-staging', help='heroku app to attach the test database to')
     test_db_specs = test_database.add_mutually_exclusive_group()
-    test_db_specs.add_argument('--db-plan', '-p', help='heroku postgres plan to use for test db, e.g. postgresql-amorphous-83485')
+    test_db_specs.add_argument('--db-plan', '-p', help='heroku postgres plan to use for test db, e.g. standard-7')
     test_db_specs.add_argument('--db-addon', '-d', help='name of heroku postgres addon containing test database, e.g. postgresql-amorphous-83485')
 
     ap.add_argument('--threads', type=int, default=1, help='number of tables to test in parallel')
