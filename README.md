@@ -39,15 +39,15 @@ Addons are provisioned on the `oadoi-staging` app by default. You can use a diff
 
 To test all tables using a Standard-7 database, run:
 
-`python run_test.py -db-plan standard-7`
+`python run_test.py --db-plan standard-7`
 
 Test a subset of tables using `--table / -t`:
 
-`python run_test.py -db-addon postgresql-amorphous-83485 -t Papers -t Authors`
+`python run_test.py --db-addon postgresql-amorphous-83485 -t Papers -t Authors`
 
 Test the first N rows of each file with `--rows N/ -r N`:
 
-`python run_test.py -db-addon postgresql-amorphous-83485 --rows 100000`
+`python run_test.py --db-addon postgresql-amorphous-83485 --rows 100000`
 
 `--rows` and `--table` can be combined:
 
