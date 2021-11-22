@@ -7,6 +7,8 @@ To be safe you'll want about 1TB available on both the local machine and the tes
 
 ## Setup
 
+This script requires python >= 3.8 and boto3 >= 1.18.
+
 ### Heroku
 
 Test databases are created and addressed as heroku addons using the heroku CLI. Install and log into it: https://devcenter.heroku.com/articles/heroku-cli
