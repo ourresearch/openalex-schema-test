@@ -58,7 +58,7 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
         bytes_done = 0
 
         for key in s3_keys:
-            if f'{table}.txt' not in key.key:
+            if f'/{table}.txt' not in key.key:
                 continue
 
             file_name = key.key.replace(prefix, 'input/')
@@ -67,20 +67,29 @@ def download_tables_from_s3(bucket, prefix, tables, rows_to_download, use_local_
             print(f'    download s3://{bucket}/{key.key} to {file_name}')
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(file_name, 'w') as f:
-                for row in key.get()['Body'].iter_lines(keepends=True):
-                    bytes_done += len(row)
+            if rows_to_download:
+                with open(file_name, 'w') as f:
+                    for row in key.get()['Body'].iter_lines(keepends=True):
+                        bytes_done += len(row)
 
-                    f.write(row.decode())
-                    rows_done += 1
+                        f.write(row.decode())
+                        rows_done += 1
 
-                    if rows_done % 1000 == 0:
-                        print(f'      downloaded {rows_done} rows, {format_size(bytes_done)}               ', end='\r')
+                        if rows_done % 1000 == 0:
+                            print(f'      downloaded {rows_done} rows, {format_size(bytes_done)}            ', end='\r')
 
-                    if rows_to_download and rows_done >= rows_to_download:
-                        break
+                        if rows_to_download and rows_done >= rows_to_download:
+                            break
 
-                print(f'      downloaded {rows_done} rows')
+                    print(f'      downloaded {rows_done} rows')
+            else:
+                cp_cmd = f'aws s3 cp s3://{bucket}/{key.key} {file_name}'
+                with subprocess.Popen(cp_cmd, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, shell=True) as p:
+                    for line in p.stdout:
+                        print(f'      {line.strip()}              ', end='\r')
+
+                if p.returncode != 0:
+                    raise subprocess.CalledProcessError(p.returncode, p.args)
 
             if rows_to_download and rows_done >= rows_to_download:
                 break
