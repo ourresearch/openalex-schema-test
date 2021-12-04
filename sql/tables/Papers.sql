@@ -41,7 +41,7 @@ CREATE UNLOGGED TABLE mag.Papers(
 
 \! tr -d '\000' < input/mag/Papers.txt > input/mag/Papers.txt.no_nulls
 
-\COPY mag.Papers(PaperId, Rank, Doi, DocType, Genre, IsParatext, PaperTitle, OriginalTitle, BookTitle, Year, Date, OnlineDate, Publisher, JournalId, ConferenceSeriesId, ConferenceInstanceId, Volume, Issue, FirstPage, LastPage, ReferenceCount, CitationCount, EstimatedCitation, OriginalVenue, FamilyId, FamilyRank, DocSubTypes, OaStatus, BestUrl, BestFreeUrl, BestFreeVersion, DoiLower, CreatedDate, UpdatedDate) FROM PROGRAM 'tail -n+2 input/mag/Papers.txt.no_nulls' NULL as '';
+\COPY mag.Papers(PaperId, Rank, Doi, DocType, Genre, IsParatext, PaperTitle, OriginalTitle, BookTitle, Year, Date, OnlineDate, Publisher, JournalId, ConferenceSeriesId, ConferenceInstanceId, Volume, Issue, FirstPage, LastPage, ReferenceCount, CitationCount, EstimatedCitation, OriginalVenue, FamilyId, FamilyRank, DocSubTypes, OaStatus, BestUrl, BestFreeUrl, BestFreeVersion, DoiLower, CreatedDate, UpdatedDate) FROM 'input/mag/Papers.txt.no_nulls' NULL as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_Papers_PaperTitle ON mag.Papers(PaperTitle);
 --CREATE INDEX idx_Papers_OriginalTitle ON mag.Papers(OriginalTitle);

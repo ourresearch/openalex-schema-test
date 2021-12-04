@@ -11,7 +11,7 @@ CREATE UNLOGGED TABLE mag.PaperAuthorAffiliations(
     OriginalAffiliation TEXT
   );
 
-\COPY mag.PaperAuthorAffiliations(PaperId, AuthorId, AffiliationId, AuthorSequenceNumber, OriginalAuthor, OriginalAffiliation) FROM PROGRAM 'tail -n+2 input/mag/PaperAuthorAffiliations.txt' NULL as '';
+\COPY mag.PaperAuthorAffiliations(PaperId, AuthorId, AffiliationId, AuthorSequenceNumber, OriginalAuthor, OriginalAffiliation) FROM 'input/mag/PaperAuthorAffiliations.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_PaperAuthorAffiliations_PaperId ON mag.PaperAuthorAffiliations(PaperId);
 --CREATE INDEX idx_PaperAuthorAffiliations_AuthorId ON mag.PaperAuthorAffiliations(AuthorId);

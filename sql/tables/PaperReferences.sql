@@ -7,7 +7,7 @@ CREATE UNLOGGED TABLE mag.PaperReferences(
     PaperReferenceId BIGINT
   );
 
-\COPY mag.PaperReferences(PaperId, PaperReferenceId) FROM PROGRAM 'tail -n+2 input/mag/PaperReferences.txt' null as '';
+\COPY mag.PaperReferences(PaperId, PaperReferenceId) FROM 'input/mag/PaperReferences.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_PaperReferences_PaperId ON mag.PaperReferences(PaperId);
 --CREATE INDEX idx_PaperReferences_PaperReferenceId ON mag.PaperReferences(PaperReferenceId);

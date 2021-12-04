@@ -7,7 +7,7 @@ CREATE UNLOGGED TABLE mag.FieldOfStudyChildren(
     ChildFieldOfStudyId BIGINT
   );
 
-\COPY mag.FieldOfStudyChildren(FieldOfStudyId, ChildFieldOfStudyId) FROM PROGRAM 'tail -n+2 input/advanced/FieldOfStudyChildren.txt' null as '';
+\COPY mag.FieldOfStudyChildren(FieldOfStudyId, ChildFieldOfStudyId) FROM 'input/advanced/FieldOfStudyChildren.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_FieldOfStudyChildren_FieldOfStudyId ON mag.FieldOfStudyChildren(FieldOfStudyId);
 --CREATE INDEX idx_FieldOfStudyChildren_ChildFieldOfStudyId ON mag.FieldOfStudyChildren(ChildFieldOfStudyId);

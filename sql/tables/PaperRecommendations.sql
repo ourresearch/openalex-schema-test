@@ -8,7 +8,7 @@ CREATE UNLOGGED TABLE mag.PaperRecommendations(
     Score FLOAT8
   );
 
-\COPY mag.PaperRecommendations(PaperId, RecommendedPaperId, Score) FROM PROGRAM 'tail -n+2 input/advanced/PaperRecommendations.txt' null as '';
+\COPY mag.PaperRecommendations(PaperId, RecommendedPaperId, Score) FROM 'input/advanced/PaperRecommendations.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_PaperRecommendations_PaperId ON mag.PaperRecommendations(PaperId);
 --CREATE INDEX idx_PaperRecommendations_RecommendedPaperId ON mag.PaperRecommendations(RecommendedPaperId);

@@ -11,7 +11,7 @@ CREATE UNLOGGED TABLE mag.EntityRelatedEntities(
     Score FLOAT8
   );
 
-\COPY mag.EntityRelatedEntities(EntityId, EntityType, RelatedEntityId, RelatedEntityType, RelatedType, Score) FROM PROGRAM 'tail -n+2 input/advanced/EntityRelatedEntities.txt' null as '';
+\COPY mag.EntityRelatedEntities(EntityId, EntityType, RelatedEntityId, RelatedEntityType, RelatedType, Score) FROM 'input/advanced/EntityRelatedEntities.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_EntityRelatedEntities_EntityId ON mag.EntityRelatedEntities(EntityId);
 --CREATE INDEX idx_EntityRelatedEntities_RelatedEntityId ON mag.EntityRelatedEntities(RelatedEntityId);

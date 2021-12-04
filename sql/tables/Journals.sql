@@ -20,7 +20,7 @@ CREATE UNLOGGED TABLE mag.Journals(
     UpdatedDate timestamp without time zone
   );
 
-\COPY mag.Journals(JournalId, Rank, NormalizedName, DisplayName, Issn, Issns, IsOa, IsInDoaj, Publisher, Webpage, PaperCount, PaperFamilyCount, CitationCount, CreatedDate, UpdatedDate) FROM PROGRAM 'tail -n+2 input/mag/Journals.txt' null as '';
+\COPY mag.Journals(JournalId, Rank, NormalizedName, DisplayName, Issn, Issns, IsOa, IsInDoaj, Publisher, Webpage, PaperCount, PaperFamilyCount, CitationCount, CreatedDate, UpdatedDate) FROM 'input/mag/Journals.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_Journals_NormalizedName ON mag.Journals(NormalizedName);
 --CREATE INDEX idx_Journals_Issn ON mag.Journals(Issn);

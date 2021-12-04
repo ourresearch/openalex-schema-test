@@ -10,7 +10,7 @@ CREATE UNLOGGED TABLE mag.PaperResources(
     RelationshipType SMALLINT
   );
 
-\COPY mag.PaperResources(PaperId, ResourceType, ResourceUrl, SourceUrl, RelationshipType) FROM PROGRAM 'tail -n+2 input/mag/PaperResources.txt' null as '';
+\COPY mag.PaperResources(PaperId, ResourceType, ResourceUrl, SourceUrl, RelationshipType) FROM 'input/mag/PaperResources.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 
 --CREATE INDEX idx_PaperResources_PaperId ON mag.PaperResources(PaperId);

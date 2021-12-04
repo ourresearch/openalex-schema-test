@@ -23,7 +23,7 @@ CREATE UNLOGGED TABLE mag.affiliations(
     geom geometry(POINT,4326)
   );
 
-\COPY mag.affiliations(AffiliationId, Rank, NormalizedName, DisplayName, GridId, RorId, OfficialPage, WikiPage, PaperCount, PaperFamilyCount, CitationCount, Iso3166Code, Latitude, Longitude, CreatedDate, UpdatedDate) FROM PROGRAM 'tail -n+2 input/mag/Affiliations.txt' null as '';
+\COPY mag.affiliations(AffiliationId, Rank, NormalizedName, DisplayName, GridId, RorId, OfficialPage, WikiPage, PaperCount, PaperFamilyCount, CitationCount, Iso3166Code, Latitude, Longitude, CreatedDate, UpdatedDate) FROM 'input/mag/Affiliations.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_affiliations_NormalizedName ON mag.affiliations(NormalizedName);
 --CREATE INDEX idx_affiliations_GridId ON mag.affiliations(GridId);

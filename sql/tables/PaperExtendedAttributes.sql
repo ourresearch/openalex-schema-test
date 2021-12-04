@@ -7,7 +7,7 @@ CREATE UNLOGGED TABLE mag.PaperExtendedAttributes(
     AttributeType SMALLINT,
     AttributeValue TEXT
   );
-\COPY mag.PaperExtendedAttributes(PaperId, AttributeType, AttributeValue) FROM 'input/mag/PaperExtendedAttributes.txt' WITH CSV delimiter E'\t'  ESCAPE '\' QUOTE E'\b'  null as '' HEADER;
+\COPY mag.PaperExtendedAttributes(PaperId, AttributeType, AttributeValue) FROM 'input/mag/PaperExtendedAttributes.txt'  null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 -- '
 
 --CREATE INDEX idx_PaperExtendedAttributes_PaperId ON mag.PaperExtendedAttributes(PaperId);

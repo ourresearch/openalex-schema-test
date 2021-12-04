@@ -8,7 +8,7 @@ CREATE UNLOGGED TABLE mag.PaperCitationContexts(
     CitationContext TEXT
   );
 
-\COPY mag.PaperCitationContexts(PaperId, PaperReferenceId, CitationContext) FROM PROGRAM 'tail -n+2 input/nlp/PaperCitationContexts.txt' null as '';
+\COPY mag.PaperCitationContexts(PaperId, PaperReferenceId, CitationContext) FROM 'input/nlp/PaperCitationContexts.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
 
 --CREATE INDEX idx_PaperCitationContexts_PaperId ON mag.PaperCitationContexts(PaperId);
 

@@ -16,7 +16,7 @@ CREATE UNLOGGED TABLE mag.PaperUrls(
     OaiPmhId TEXT
   );
 
-\COPY mag.PaperUrls(PaperId, SourceType, SourceUrl, LanguageCode, UrlForLandingPage, UrlForPdf, HostType, Version, License, RepositoryInstitution, OaiPmhId) FROM PROGRAM 'tail -n+2 input/mag/PaperUrls.txt' delimiter E'\t' null as '';
+\COPY mag.PaperUrls(PaperId, SourceType, SourceUrl, LanguageCode, UrlForLandingPage, UrlForPdf, HostType, Version, License, RepositoryInstitution, OaiPmhId) FROM 'input/mag/PaperUrls.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_PaperUrls_PaperId ON mag.PaperUrls(PaperId);
 

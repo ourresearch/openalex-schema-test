@@ -10,7 +10,7 @@ CREATE UNLOGGED TABLE mag.RelatedFieldOfStudy(
     Rank FLOAT8
   );
 
-\COPY mag.RelatedFieldOfStudy(FieldOfStudyId1, Type1, FieldOfStudyId2, Type2, Rank) FROM PROGRAM 'tail -n+2 input/advanced/RelatedFieldOfStudy.txt' null as '';
+\COPY mag.RelatedFieldOfStudy(FieldOfStudyId1, Type1, FieldOfStudyId2, Type2, Rank) FROM 'input/advanced/RelatedFieldOfStudy.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_RelatedFieldOfStudy_FieldOfStudyId1 ON mag.RelatedFieldOfStudy(FieldOfStudyId1);
 --CREATE INDEX idx_RelatedFieldOfStudy_FieldOfStudyId2 ON mag.RelatedFieldOfStudy(FieldOfStudyId2);

@@ -13,7 +13,7 @@ CREATE UNLOGGED TABLE mag.ConferenceSeries(
     CreatedDate DATE
   );
 
-\COPY mag.ConferenceSeries(ConferenceSeriesId, Rank, NormalizedName, DisplayName, PaperCount, PaperFamilyCount, CitationCount, CreatedDate) FROM PROGRAM 'tail -n+2 input/mag/ConferenceSeries.txt' null as '';
+\COPY mag.ConferenceSeries(ConferenceSeriesId, Rank, NormalizedName, DisplayName, PaperCount, PaperFamilyCount, CitationCount, CreatedDate) FROM 'input/mag/ConferenceSeries.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_ConferenceSeries_NormalizedName ON mag.ConferenceSeries(NormalizedName);
 

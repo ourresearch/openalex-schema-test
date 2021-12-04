@@ -24,7 +24,7 @@ CREATE UNLOGGED TABLE mag.ConferenceInstances(
     geom geometry(POINT,4326)
   );
 
-\COPY mag.ConferenceInstances(ConferenceInstanceId, NormalizedName, DisplayName, ConferenceSeriesId, Location, OfficialUrl, StartDate, EndDate, AbstractRegistrationDate, SubmissionDeadlineDate, NotificationDueDate, FinalVersionDueDate, PaperCount, PaperFamilyCount, CitationCount, Latitude, Longitude, CreatedDate) FROM PROGRAM 'tail -n+2 input/mag/ConferenceInstances.txt' null as '';
+\COPY mag.ConferenceInstances(ConferenceInstanceId, NormalizedName, DisplayName, ConferenceSeriesId, Location, OfficialUrl, StartDate, EndDate, AbstractRegistrationDate, SubmissionDeadlineDate, NotificationDueDate, FinalVersionDueDate, PaperCount, PaperFamilyCount, CitationCount, Latitude, Longitude, CreatedDate) FROM 'input/mag/ConferenceInstances.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
 
 --CREATE INDEX idx_ConferenceInstances_NormalizedName ON mag.ConferenceInstances(NormalizedName);
 --CREATE INDEX idx_ConferenceInstances_ConferenceSeriesId ON mag.ConferenceInstances(ConferenceSeriesId);

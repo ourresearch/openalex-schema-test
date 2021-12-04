@@ -11,7 +11,7 @@ CREATE UNLOGGED TABLE mag.PaperMeSH(
     IsMajorTopic BOOLEAN
   );
 
-\COPY mag.PaperMeSH(PaperId, DescriptorUI, DescriptorName, QualifierUI, QualifierName, IsMajorTopic) FROM PROGRAM 'tail -n+2 input/advanced/PaperMeSH.txt' null as '';
+\COPY mag.PaperMeSH(PaperId, DescriptorUI, DescriptorName, QualifierUI, QualifierName, IsMajorTopic) FROM 'input/advanced/PaperMeSH.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b';
 
 --CREATE INDEX idx_PaperMeSH_PaperId ON mag.PaperMeSH(PaperId);
 --CREATE INDEX idx_PaperMeSH_DescriptorUI ON mag.PaperMeSH(DescriptorUI);

@@ -8,7 +8,7 @@ CREATE UNLOGGED TABLE mag.FieldOfStudyExtendedAttributes(
     AttributeValue TEXT
   );
 
-\COPY mag.FieldOfStudyExtendedAttributes(FieldOfStudyId, AttributeType, AttributeValue) FROM program 'tail -n+2 input/advanced/FieldOfStudyExtendedAttributes.txt' null as '';
+\COPY mag.FieldOfStudyExtendedAttributes(FieldOfStudyId, AttributeType, AttributeValue) FROM 'input/advanced/FieldOfStudyExtendedAttributes.txt' null as '' DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
 
 --CREATE INDEX idx_FieldOfStudyExtendedAttributes_FieldOfStudyId ON mag.FieldOfStudyExtendedAttributes(FieldOfStudyId);
 

@@ -15,7 +15,7 @@ CREATE UNLOGGED TABLE mag.FieldsOfStudy(
     CreatedDate DATE
   );
 
-\COPY mag.FieldsOfStudy(FieldOfStudyId, Rank, NormalizedName, DisplayName, MainType, Level, PaperCount, PaperFamilyCount, CitationCount, CreatedDate) FROM PROGRAM 'tail -n+2 input/advanced/FieldsOfStudy.txt' null as '';
+\COPY mag.FieldsOfStudy(FieldOfStudyId, Rank, NormalizedName, DisplayName, MainType, Level, PaperCount, PaperFamilyCount, CitationCount, CreatedDate) FROM 'input/advanced/FieldsOfStudy.txt' DELIMITER E'\t' CSV HEADER QUOTE E'\b'  null as '';
 
 SELECT :DROP_TABLE_AFTER_TEST = '1' as should_drop \gset
 \if :should_drop
